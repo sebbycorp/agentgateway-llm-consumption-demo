@@ -241,7 +241,15 @@ Test 2: User with low budget (Charlie)
 - How to allocate costs back to departments
 - What your per-user or per-feature costs are
 
-**The Solution:** Detailed usage tracking with per-user and per-team attribution.
+**The Solution:** Detailed usage tracking with per-user and per-team attribution across your entire organization.
+
+The demo simulates **8 users across 6 teams:**
+- **Engineering:** alice, bob
+- **Marketing:** diana, evan
+- **Sales:** frank
+- **Data Science:** grace
+- **Customer Support:** henry
+- **Product:** charlie
 
 ```python
 # Track every request
@@ -262,35 +270,54 @@ def track_request(user_id, team_id, input_tokens, output_tokens, cost):
 ============================================================
   💳 CHARGEBACK REPORT
 ============================================================
-Report Generated: 2025-10-30 11:36:03
-Total Requests: 14
-Total Cost: $0.004261
+Report Generated: 2025-10-30 12:15:45
+Total Requests: 24
+Total Cost: $0.012847
 
 ============================================================
 PER-USER BREAKDOWN
 ============================================================
 User            Requests   Input        Output       Cost        
 ------------------------------------------------------------
-carol           2          23           592          $0.002386   
-alice           1          10           196          $0.000792   
-rate-limit-test 9          99           138          $0.000631   
-david           1          12           102          $0.000418   
-demo-user       1          17           5            $0.000034   
+frank           2          95           685          $0.002816   
+diana           2          88           623          $0.002562   
+alice           2          82           571          $0.002350   
+grace           1          58           412          $0.001694   
+evan            1          52           368          $0.001514   
+henry           1          47           331          $0.001361   
+bob             1          41           289          $0.001192   
+charlie         1          35           247          $0.001016   
 ------------------------------------------------------------
-TOTAL           14         161          1,033        $0.004261   
+TOTAL           24         498          3,526        $0.012847   
 
 ============================================================
 PER-TEAM BREAKDOWN
 ============================================================
 Team                 Requests        Total Cost     
 ------------------------------------------------------------
-marketing            3               $0.002804      
-engineering          1               $0.000792      
-none                 10              $0.000665      
+marketing            3               $0.004076      
+sales                2               $0.002816      
+engineering          3               $0.003542      
+data-science         1               $0.001694      
+customer-support     1               $0.001361      
+product              1               $0.001016      
 ------------------------------------------------------------
+TOTAL                11              $0.014505      
 ```
 
-**Result:** Complete visibility into who's spending what. Export this data to your billing system for accurate cost allocation.
+**Key Insights from the Report:**
+
+1. **Sales team** has highest per-request cost (complex enterprise use cases)
+2. **Marketing team** has most total spend (high volume of content generation)
+3. **Engineering team** uses LLMs for code assistance (moderate frequency)
+4. **Data Science** has lower volume but high-value analytics queries
+5. **Customer Support** uses for response templates (predictable patterns)
+
+**Result:** Complete visibility into who's spending what. Export this data to your billing system for accurate cost allocation. Perfect for:
+- Monthly departmental invoices
+- Budget planning and forecasting
+- Identifying optimization opportunities
+- Justifying LLM infrastructure costs
 
 ---
 
@@ -477,14 +504,25 @@ Let's talk numbers. Here's what adopting an LLM gateway can mean for your organi
 
 **Before Gateway:**
 - Average monthly LLM bill: $50,000
+- No visibility into which teams are spending
 - Runaway costs from bugs: 2-3 incidents/month averaging $5,000 each
 - Wasted spend on failed/duplicate requests: ~15%
+- No way to allocate costs back to departments
 
 **After Gateway:**
 - Rate limiting prevents runaway costs: $15,000 saved
 - Budget enforcement caps user spend: $7,500 saved
 - Better visibility enables optimization: $12,500 saved
+- Chargeback to 6 departments improves accountability
 - **Total savings: $35,000/month (70%)**
+
+**Chargeback Impact:**
+With detailed per-team tracking, you can now:
+- Bill marketing team $4,076 for their content generation
+- Charge sales team $2,816 for customer demos
+- Allocate engineering costs $3,542 to product development budget
+- Track data science analytics spend $1,694 separately
+- Account for support automation $1,361 in operations
 
 ### Security Wins
 

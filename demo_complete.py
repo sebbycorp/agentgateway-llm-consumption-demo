@@ -49,6 +49,11 @@ user_budgets = {
     "alice": {"limit": 0.05, "spent": 0.0, "team": "engineering"},
     "bob": {"limit": 0.10, "spent": 0.0, "team": "engineering"},
     "charlie": {"limit": 0.02, "spent": 0.0, "team": "product"},  # Low budget for demo
+    "diana": {"limit": 0.08, "spent": 0.0, "team": "marketing"},
+    "evan": {"limit": 0.06, "spent": 0.0, "team": "marketing"},
+    "frank": {"limit": 0.15, "spent": 0.0, "team": "sales"},
+    "grace": {"limit": 0.07, "spent": 0.0, "team": "data-science"},
+    "henry": {"limit": 0.05, "spent": 0.0, "team": "customer-support"},
 }
 
 # Cost tracking storage
@@ -479,15 +484,24 @@ def demo_cost_tracking():
     print()
     
     # We already have some tracked requests from previous demos
-    # Add a few more to make it interesting
+    # Add more diverse users from different teams
     additional_users = [
         {"user_id": "alice", "query": "Write a Python function to sort an array"},
-        {"user_id": "bob", "query": "Explain machine learning"},
+        {"user_id": "bob", "query": "Explain machine learning in simple terms"},
+        {"user_id": "diana", "query": "Create a compelling product launch email"},
+        {"user_id": "evan", "query": "Write 3 social media post ideas"},
+        {"user_id": "frank", "query": "Draft a sales pitch for enterprise clients"},
+        {"user_id": "grace", "query": "Analyze this dataset and summarize findings"},
+        {"user_id": "henry", "query": "Write a friendly customer support response"},
+        {"user_id": "alice", "query": "Debug this code snippet"},
+        {"user_id": "diana", "query": "Generate 5 blog post titles about AI"},
+        {"user_id": "frank", "query": "Create a follow-up email template"},
     ]
     
     for user in additional_users:
         user_id = user['user_id']
-        print(f"Request from {user_id} ({user_budgets[user_id]['team']})...", end=" ")
+        team = user_budgets.get(user_id, {}).get('team', 'unknown')
+        print(f"Request from {user_id:<10} ({team:<20})...", end=" ")
         success, _, cost, _ = send_anthropic_message(
             user['query'],
             show_response=False,
@@ -497,7 +511,7 @@ def demo_cost_tracking():
             print(f"✅ ${cost:.6f}")
         else:
             print(f"❌")
-        time.sleep(0.3)
+        time.sleep(0.2)
     
     print()
     
@@ -586,7 +600,7 @@ def demo_multi_provider():
     
     print("Scenario 1: Using Anthropic Claude Haiku (Primary)")
     print("-"*70)
-    success1, _, cost1 = send_anthropic_message(
+    success1, _, cost1, _ = send_anthropic_message(
         query,
         user_id="multi-demo",
         show_response=False
