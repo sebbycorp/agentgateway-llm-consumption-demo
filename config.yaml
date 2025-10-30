@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=../../schema/local.json
+binds:
+- port: 3000
+  listeners:
+  - routes:
+    # Anthropic AI backend with security & cost controls
+    - policies:
+        # Cost Control: Rate limiting to prevent excessive API usage
+        # Token bucket: 10 requests max, refill 10 tokens every 60 seconds
+        localRateLimit:
+          - maxTokens: 10
+            tokensPerFill: 10
+            fillInterval: 60s
+        # Authentication: Secure API key handling
+        backendAuth:
+          key: "$ANTHROPIC_API_KEY"
+      backends:
+      - ai:
+          name: anthropic
+          provider:
+            anthropic:
+              model: claude-haiku-4-5-20251001
+          routes:
+            /v1/messages: messages
+            /v1/chat/completions: completions
+            /v1/models: passthrough
+            "*": passthrough
+    # MCP backend
+    - policies:
+        cors:
+          allowOrigins:
+            - "*"
+          allowHeaders:
+            - mcp-protocol-version
+            - content-type
+            - cache-control
+      backends:
+      - mcp:
+          targets:
+          - name: everything
+            stdio:
+              cmd: npx
+              args: ["@modelcontextprotocol/server-everything"]
