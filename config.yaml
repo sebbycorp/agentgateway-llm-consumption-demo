@@ -1,4 +1,8 @@
 # yaml-language-server: $schema=../../schema/local.json
+config:
+  tracing:
+    otlpEndpoint: http://localhost:4317
+    randomSampling: true
 binds:
 - port: 3000
   listeners:
