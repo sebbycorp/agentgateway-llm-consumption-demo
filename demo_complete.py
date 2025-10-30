@@ -1009,8 +1009,67 @@ def main():
         demo_budget_enforcement()
         input("\n➡️  Press Enter to continue to Cost Tracking...")
         
+        # Rate Limit Reset Wait (before Demo 5)
+        print("\n" + "=" * 70)
+        print("⏳ RATE LIMIT RESET")
+        print("=" * 70)
+        print()
+        print("💡 We need to wait for the rate limit to reset before Demo 5.")
+        print("   Demo 3 sent 12 requests and Demo 4 sent several test requests.")
+        print("   The token bucket needs to refill (10 requests/60s limit).")
+        print()
+        print("⏱️  Waiting 60 seconds...")
+        print()
+        
+        # Countdown timer
+        for remaining in range(60, 0, -10):
+            if remaining == 60:
+                print(f"   {remaining} seconds remaining... ⏳")
+            elif remaining <= 10:
+                print(f"   {remaining} seconds... 🔄")
+            else:
+                print(f"   {remaining} seconds... ⏳")
+            time.sleep(10)
+        
+        print()
+        print("✅ Rate limit reset! Ready for cost tracking demo.")
+        print()
+        
+        input("Press Enter to continue to Cost Tracking Demo...")
+        
         demo_cost_tracking()
         input("\n➡️  Press Enter to continue to Multi-Provider Strategy...")
+        
+        # Rate Limit Reset Wait
+        print("\n" + "=" * 70)
+        print("⏳ RATE LIMIT RESET")
+        print("=" * 70)
+        print()
+        print("💡 We've made many requests during the previous demos.")
+        print("   The gateway's rate limiter (10 requests/60s) needs to reset")
+        print("   before we can test multiple providers.")
+        print()
+        print("   This is a GOOD thing! It shows cost protection is working.")
+        print()
+        print("⏱️  Waiting 60 seconds for rate limit token bucket to refill...")
+        print()
+        
+        # Countdown timer
+        for remaining in range(60, 0, -10):
+            if remaining == 60:
+                print(f"   {remaining} seconds remaining... ⏳")
+            elif remaining <= 10:
+                print(f"   {remaining} seconds... 🔄")
+            else:
+                print(f"   {remaining} seconds... ⏳")
+            time.sleep(10)
+        
+        print()
+        print("✅ Rate limit reset! Token bucket refilled.")
+        print("   Ready to test multi-provider routing!")
+        print()
+        
+        input("Press Enter to continue to Multi-Provider Demo...")
         
         # Part 3: Reliability & Flexibility
         print("\n" + "⚡" * 35)
