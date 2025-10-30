@@ -29,6 +29,43 @@ binds:
             /v1/chat/completions: completions
             /v1/models: passthrough
             "*": passthrough
+    
+    # OpenAI backend
+    - policies:
+        localRateLimit:
+          - maxTokens: 10
+            tokensPerFill: 10
+            fillInterval: 60s
+        backendAuth:
+          key: "$OPENAI_API_KEY"
+      backends:
+      - ai:
+          name: openai
+          provider:
+            openAI:
+              model: gpt-4o-mini
+          routes:
+            /openai/v1/chat/completions: completions
+            /openai/v1/models: models
+    
+    # Grok AI (xAI) - trying without base_url first
+    - policies:
+        localRateLimit:
+          - maxTokens: 10
+            tokensPerFill: 10
+            fillInterval: 60s
+        backendAuth:
+          key: "$XAI_API_KEY"
+      backends:
+      - ai:
+          name: grok
+          provider:
+            openAI:
+              model: grok-4-fast-reasoning
+          routes:
+            /grok/v1/chat/completions: completions
+            /grok/v1/models: models
+    
     # MCP backend
     - policies:
         cors:

@@ -11,3 +11,27 @@ services:
     environment:
       - COLLECTOR_OTLP_ENABLED=true
 
+  presidio-analyzer:
+    container_name: presidio-analyzer
+    restart: unless-stopped
+    image: mcr.microsoft.com/presidio-analyzer:latest
+    ports:
+      - "127.0.0.1:5001:5001"  # Presidio Analyzer API
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  presidio-anonymizer:
+    container_name: presidio-anonymizer
+    restart: unless-stopped
+    image: mcr.microsoft.com/presidio-anonymizer:latest
+    ports:
+      - "127.0.0.1:5002:5002"  # Presidio Anonymizer API
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5002/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+

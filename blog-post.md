@@ -94,54 +94,136 @@ binds:
 
 **Result:** Your API key never leaves the server. Clients can't leak what they don't have.
 
-### Feature #2: PII Redaction
+### Feature #2: PII Redaction with Microsoft Presidio
 
 **The Problem:** Users might include sensitive data in prompts:
 - Social Security Numbers
 - Credit card numbers  
 - Medical records
 - Personal identifiers
+- Email addresses, phone numbers, names, locations
 
 Sending this to third-party AI providers creates compliance nightmares for GDPR, HIPAA, and SOC2.
 
-**The Solution:** Application-layer redaction before data reaches the gateway or LLM.
+**The Solution:** ML-powered PII detection using **Microsoft Presidio** deployed as a sidecar service.
+
+#### Why Presidio?
+
+Presidio is an open-source, production-ready PII detection and anonymization framework from Microsoft that:
+- Detects **50+ PII entity types** out-of-the-box
+- Uses ML models for accurate detection (not just regex)
+- Supports custom entity recognizers
+- Battle-tested by Microsoft in production
+- Fully open source and free to use
+
+#### Architecture
+
+```
+Client Request
+      ↓
+Application Layer
+      ↓
+Presidio Analyzer (port 5001) ← Sidecar
+      ↓ (detected entities)
+Presidio Anonymizer (port 5002) ← Sidecar
+      ↓ (redacted text)
+AgentGateway
+      ↓
+LLM Provider (receives clean data)
+```
+
+#### Implementation
 
 ```python
-import re
-
 def redact_pii(content):
-    """Redact sensitive data before sending to LLM"""
-    # Redact SSN (###-##-####)
-    content = re.sub(r'\b\d{3}-\d{2}-\d{4}\b', '[SSN-REDACTED]', content)
-    
-    # Redact credit cards (####-####-####-####)
-    content = re.sub(
-        r'\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b', 
-        '[CARD-REDACTED]', 
-        content
+    """Redact PII using Microsoft Presidio"""
+    # Step 1: Analyze for PII
+    analyze_response = requests.post(
+        "http://localhost:5001/analyze",
+        json={
+            "text": content,
+            "language": "en",
+            "entities": [
+                "CREDIT_CARD",
+                "US_SSN",
+                "EMAIL_ADDRESS",
+                "PHONE_NUMBER",
+                "PERSON",
+                "LOCATION"
+            ]
+        }
     )
     
-    return content
-
-# Before
-prompt = "My SSN is 123-45-6789 and card is 4532-1234-5678-9010"
-
-# After redaction
-safe_prompt = redact_pii(prompt)
-# "My SSN is [SSN-REDACTED] and card is [CARD-REDACTED]"
+    # Step 2: Anonymize detected PII
+    anonymize_response = requests.post(
+        "http://localhost:5002/anonymize",
+        json={
+            "text": content,
+            "anonymizers": {
+                "US_SSN": {"type": "replace", "new_value": "<SSN>"},
+                "CREDIT_CARD": {"type": "replace", "new_value": "<CREDIT-CARD>"}
+            },
+            "analyzer_results": analyze_response.json()
+        }
+    )
+    
+    return anonymize_response.json()["text"]
 ```
 
 **Demo Output:**
 ```
-Test 1: SSN in prompt
-   ❌ Original: My social security number is 123-45-6789
-   ✅ Redacted: My social security number is [SSN-REDACTED]
-   📤 Sending redacted version to gateway...
-   ✅ Request successful - LLM never saw sensitive data
-   💰 Cost: $0.000428
+======================================================================
+📋 TEST CASE 1: SSN in prompt
+======================================================================
+
+❌ ORIGINAL QUERY (contains PII):
+   "My social security number is 123-45-6789 and I need help with taxes."
+
+✅ REDACTED QUERY (PII removed):
+   "My social security number is <SSN> and I need help with taxes."
+
+🔍 PII Protection:
+   • Social Security Numbers → <SSN>
+
+📤 Sending REDACTED version to gateway...
+----------------------------------------------------------------------
+✅ Request successful - LLM never saw sensitive data!
+💰 Cost: $0.000428
 ```
 
-**Result:** Compliance-ready applications that protect user privacy while still getting value from LLMs.
+**Deployment with Docker Compose:**
+
+```yaml
+services:
+  # Observability
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686"
+  
+  # PII Detection Sidecars
+  presidio-analyzer:
+    image: mcr.microsoft.com/presidio-analyzer:latest
+    ports:
+      - "5001:5001"
+  
+  presidio-anonymizer:
+    image: mcr.microsoft.com/presidio-anonymizer:latest
+    ports:
+      - "5002:5002"
+```
+
+**Enterprise Value:**
+- ✅ **ML-powered detection** - More accurate than regex patterns
+- ✅ **50+ entity types** - SSN, credit cards, emails, phones, names, locations, IPs, crypto wallets, medical IDs, and more
+- ✅ **Sidecar pattern** - Scales independently, easy to update
+- ✅ **Battle-tested** - Used by Microsoft in production
+- ✅ **Customizable** - Add industry-specific PII types (patient IDs, account numbers, etc.)
+- ✅ **Resilient** - Falls back to regex if Presidio unavailable
+- ✅ **Open source** - No vendor lock-in, community-driven
+- ✅ **Compliance-ready** - GDPR, HIPAA, SOC2, CCPA
+
+**Result:** Enterprise-grade PII protection that adapts to your needs. Add custom recognizers for industry-specific identifiers or fine-tune detection thresholds.
 
 ---
 
@@ -444,8 +526,12 @@ export ANTHROPIC_API_KEY='your-key-here'
 git clone https://github.com/solo-io/agentgateway-demo
 cd agentgateway-demo
 
-# Start observability (Jaeger)
+# Start infrastructure (Jaeger + Presidio)
 ./start-observability.sh
+# This starts:
+#   • Jaeger (observability)
+#   • Presidio Analyzer (PII detection)
+#   • Presidio Anonymizer (PII redaction)
 
 # In another terminal, start the gateway
 agentgateway --file config.yaml
@@ -454,7 +540,7 @@ agentgateway --file config.yaml
 ./run-complete-demo.sh
 ```
 
-The demo is interactive - you'll be walked through all 7 features with real API calls, live cost tracking, and actual rate limiting in action.
+The demo is interactive - you'll be walked through all 7 features with real API calls, live cost tracking, ML-powered PII detection, and actual rate limiting in action.
 
 ### What You'll See
 
@@ -554,6 +640,67 @@ With detailed per-team tracking, you can now:
 
 For the technically curious, here's how AgentGateway achieves all this:
 
+### Complete Stack Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     Client Application                       │
+└────────────────────────┬────────────────────────────────────┘
+                         │ User Request with potential PII
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   Application Layer (Python)                 │
+│  • Request validation                                        │
+│  • User/team attribution                                     │
+│  • Budget checking                                           │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                         │ PII Detection Request
+                         ▼
+┌────────────────────────────────────┐ ┌─────────────────────┐
+│  Presidio Analyzer (Port 5001)     │ │  Jaeger             │
+│  • ML-powered PII detection        │ │  Observability      │
+│  • 50+ entity types                │◄┤  • Distributed      │
+│  • Custom recognizers              │ │    traces           │
+└────────────┬───────────────────────┘ │  • Metrics          │
+             │ Detected Entities       └─────────────────────┘
+             ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Presidio Anonymizer (Port 5002)                            │
+│  • Replace/mask/encrypt PII                                 │
+│  • Configurable anonymization strategies                    │
+└────────────────────────┬────────────────────────────────────┘
+                         │ Clean, Redacted Text
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│  AgentGateway (Port 3000)                                   │
+│  • Rate limiting                                            │
+│  • Authentication (API keys)                                │
+│  • Multi-provider routing                                   │
+│  • OpenTelemetry tracing                                    │
+│  • Metrics & logging                                        │
+└────────────────────────┬────────────────────────────────────┘
+                         │ Protected Request
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    LLM Providers                             │
+│  • Anthropic Claude                                         │
+│  • OpenAI GPT                                               │
+│  • Grok (xAI)                                               │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Sidecar Pattern Benefits
+
+The demo uses Docker Compose to deploy Presidio as sidecar services:
+
+**Why Sidecars?**
+- ✅ **Independent scaling** - Scale PII detection separately from gateway
+- ✅ **Easy updates** - Update Presidio without touching gateway
+- ✅ **Technology agnostic** - Presidio is Python, Gateway is Rust
+- ✅ **Isolation** - Failures in one service don't crash others
+- ✅ **Reusability** - Other services can use the same Presidio instance
+
 ### High-Performance Proxy
 
 Built in Rust for:
@@ -566,6 +713,7 @@ Built in Rust for:
 - Automatic trace context propagation
 - Standardized semantic conventions for GenAI
 - Compatible with any OTLP backend (Jaeger, Grafana, Datadog)
+- Traces span across all services (Application → Presidio → Gateway → LLM)
 
 ### Flexible Configuration
 
@@ -776,14 +924,21 @@ Ready to see AgentGateway in action?
 
 ```bash
 # Get started in 3 commands
-./start-observability.sh
+./start-observability.sh      # Starts Jaeger + Presidio
 agentgateway --file config.yaml
 ./run-complete-demo.sh
 ```
 
+**What's Running:**
+- 🔭 **Jaeger** (localhost:16686) - Distributed tracing UI
+- 🔍 **Presidio Analyzer** (localhost:5001) - ML-powered PII detection
+- 🛡️ **Presidio Anonymizer** (localhost:5002) - PII redaction service
+- 🌉 **AgentGateway** (localhost:3000) - High-performance LLM proxy
+
 **Resources:**
 - 📦 Demo Repository: `github.com/solo-io/agentgateway-demo`
-- 📖 Documentation: `docs.solo.io/agentgateway`
+- 📖 AgentGateway Docs: `docs.solo.io/agentgateway`
+- 🔒 Presidio GitHub: `github.com/microsoft/presidio`
 - 💬 Community: `slack.solo.io`
 - 🐛 Issues: `github.com/solo-io/agentgateway/issues`
 

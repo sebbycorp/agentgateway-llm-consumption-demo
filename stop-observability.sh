@@ -1,7 +1,7 @@
 #!/bin/bash
 
-echo "🛑 Stopping AgentGateway Observability Stack"
-echo "============================================"
+echo "🛑 Stopping AgentGateway Infrastructure"
+echo "======================================="
 echo ""
 
 # Check if docker is running
@@ -10,28 +10,32 @@ if ! docker info > /dev/null 2>&1; then
     exit 1
 fi
 
-# Check if Jaeger container is running
-if docker ps | grep -q jaeger; then
-    echo "📊 Stopping Jaeger..."
+# Check if any containers are running
+if docker ps | grep -qE '(jaeger|presidio)'; then
+    echo "📊 Stopping all services..."
+    echo "   • Jaeger"
+    echo "   • Presidio Analyzer"
+    echo "   • Presidio Anonymizer"
+    echo ""
     docker compose down
     
     # Wait a moment and verify
     sleep 2
     
-    if docker ps | grep -q jaeger; then
-        echo "❌ Failed to stop Jaeger"
+    if docker ps | grep -qE '(jaeger|presidio)'; then
+        echo "❌ Failed to stop some services"
         exit 1
     else
-        echo "✅ Jaeger stopped successfully!"
+        echo "✅ All services stopped successfully!"
     fi
 else
-    echo "ℹ️  Jaeger is not running"
+    echo "ℹ️  No services are running"
 fi
 
 echo ""
 echo "🧹 Cleanup complete!"
 echo ""
-echo "💡 To restart observability:"
+echo "💡 To restart infrastructure:"
 echo "   ./start-observability.sh"
 echo ""
 
